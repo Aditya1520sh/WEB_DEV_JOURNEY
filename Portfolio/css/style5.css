@@ -1,0 +1,241 @@
+/* Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Poppins", sans-serif;
+}
+
+/* Body Gradient Background */
+body {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #0f0f1f, #1a1a40, #3d2c8d, #b74b4b);
+    background-size: 400% 400%;
+    animation: gradientBG 15s ease infinite;
+    color: #fff;
+}
+
+/* Background Gradient Animation */
+@keyframes gradientBG {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* Header */
+header {
+    width: 100%;
+    padding: 20px 50px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    /* Glassmorphism */
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
+    border-radius: 20px;
+    box-shadow: 0 4px 30px rgba(0,0,0,0.3);
+}
+
+#logo {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #fff;
+    text-transform: uppercase;
+    text-decoration: none;
+    letter-spacing: 2px;
+}
+
+/* Navigation */
+nav a {
+    text-decoration: none;
+    margin: 0 15px;
+    font-size: 1rem;
+    color: #ddd;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+/* Hover Underline + Glow */
+nav a::after {
+    content: "";
+    position: absolute;
+    width: 0;
+    height: 2px;
+    background: #b74b4b;
+    left: 0;
+    bottom: -5px;
+    transition: 0.3s;
+}
+
+nav a:hover::after {
+    width: 100%;
+}
+
+nav a:hover {
+    color: #fff;
+    text-shadow: 0 0 8px #b74b4b;
+}
+
+nav .active {
+    color: #fff;
+    font-weight: 600;
+}
+
+/* Home Section */
+.home {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 120px 10%;
+    gap: 50px;
+}
+
+/* Profile Image */
+.home-img {
+    border-radius: 50%;
+}
+
+.home-img img {
+    position: relative;
+    width: 32vw;
+    border-radius: 50%;
+    box-shadow: 0 0 40px rgba(183, 75, 75, 0.7), 
+                0 0 80px rgba(183, 75, 75, 0.5);
+    cursor: pointer;
+    transition: transform 0.4s ease, box-shadow 0.4s ease;
+}
+
+.home-img img:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 60px rgba(255, 120, 120, 0.9), 
+                0 0 120px rgba(255, 100, 100, 0.7);
+}
+
+/* Content */
+.home-content h1 {
+    font-size: 3rem;
+    margin-bottom: 15px;
+}
+
+.home-content h1 span {
+    color: #b74b4b;
+}
+
+.typing-text {
+    font-size: 1.5rem;
+    margin-bottom: 20px;
+}
+
+.home-content p {
+    max-width: 500px;
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 20px;
+    color: #ccc;
+}
+
+/* Social Icons */
+.social-icons a {
+    display: inline-block;
+    margin: 0 10px;
+    font-size: 1.5rem;
+    color: #ddd;
+    transition: all 0.3s ease;
+}
+
+.social-icons a:hover {
+    color: #b74b4b;
+    transform: scale(1.2);
+    text-shadow: 0 0 12px #b74b4b;
+}
+
+/* Button */
+.btn {
+    display: inline-block;
+    padding: 12px 25px;
+    border-radius: 30px;
+    background: linear-gradient(135deg, #b74b4b, #ff5c5c);
+    color: #fff;
+    text-decoration: none;
+    font-size: 1rem;
+    transition: 0.3s ease;
+    box-shadow: 0 0 20px rgba(183, 75, 75, 0.6);
+}
+
+.btn:hover {
+    background: linear-gradient(135deg, #ff5c5c, #b74b4b);
+    box-shadow: 0 0 30px rgba(255, 120, 120, 0.8);
+}
+
+/* ---------------- RESPONSIVENESS ---------------- */
+
+/* Tablets */
+@media (max-width: 992px) {
+    .home {
+        flex-direction: column;
+        padding: 150px 5%;
+        text-align: center;
+        gap: 30px;
+    }
+
+    .home-img img {
+        width: 45vw;
+    }
+
+    .home-content h1 {
+        font-size: 2.5rem;
+    }
+
+    .typing-text {
+        font-size: 1.3rem;
+    }
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+    header {
+        flex-direction: column;
+        padding: 15px 20px;
+    }
+
+    nav {
+        margin-top: 10px;
+    }
+
+    nav a {
+        margin: 0 8px;
+        font-size: 0.9rem;
+    }
+
+    .home {
+        flex-direction: column;
+        padding: 140px 5% 80px;
+        gap: 25px;
+    }
+
+    .home-img img {
+        width: 65vw;
+    }
+
+    .home-content h1 {
+        font-size: 2rem;
+    }
+
+    .typing-text {
+        font-size: 1.1rem;
+    }
+
+    .home-content p {
+        font-size: 0.95rem;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        font-size: 0.9rem;
+    }
+}

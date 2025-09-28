@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register Form</title>
+  <link rel="stylesheet" href="css/style2.css">
+  <link rel="stylesheet" href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css">
+</head>
+<body>
+  <div class="container">
+    <div class="form-box">
+      <h2>Register Form</h2>
+      <form>
+        <div class="input-box">
+          <input type="text" placeholder="Full Name" required>
+          <i class='bx bx-user'></i>
+        </div>
+        <div class="input-box">
+          <input type="email" placeholder="Email" required>
+          <i class='bx bx-envelope'></i>
+        </div>
+        <div class="input-box">
+          <input type="password" placeholder="Password" required>
+          <i class='bx bx-lock'></i>
+        </div>
+        <div class="input-box">
+          <input type="password" placeholder="Confirm Password" required>
+          <i class='bx bx-lock'></i>
+        </div>
+        <div id="btn">
+            <button>Submit</button>
+        </div>
+        <p>or login with social platforms</p>
+        <div class="social-icons">
+            <a href="#"><i class="bx bxl-google"></i></a> 
+            <a href="#"><i class="bx bxl-github"></i></a>
+            <a href="#"><i class="bx bxl-linkedin"></i></a>            
+        </div>
+        <!-- Login Button goes back to index.html -->
+        <button type="button" onclick="window.location.href='Login.html'">Login</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

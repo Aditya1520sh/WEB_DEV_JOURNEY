@@ -1,0 +1,119 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: sans-serif;
+}
+
+html, body {
+    height: 100%;
+    background: linear-gradient(135deg, #e2e2e2, #c9d6ff);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Login box */
+#login {
+    border-radius: 10px;
+    padding: 30px 40px;
+    background: #fff;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    text-align: center;
+    width: 320px;
+}
+
+#login h1 {
+    margin-bottom: 20px;
+    color: #333;
+}
+
+/* Input fields */
+.input-box {
+    position: relative;
+    margin: 15px 0;
+    width: 100%;
+}
+
+.input-box input {
+    width: 100%;
+    padding: 10px 35px 10px 10px;
+    border: 1px solid #aaa;
+    border-radius: 8px;
+    outline: none;
+    font-size: 14px;
+}
+
+.input-box i {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #555;
+}
+
+/* Forgot link */
+#forgot {
+    text-align: right;
+    margin: 10px 0;
+}
+
+#forgot a {
+    font-size: 13px;
+    color: #4a4aff;
+    text-decoration: none;
+}
+
+#forgot a:hover {
+    text-decoration: underline;
+}
+
+/* Button */
+#btn button {
+    margin-top: 10px;
+    border: none;
+    outline: none;
+    background: #4a4aff;
+    color: white;
+    padding: 10px;
+    width: 100%;
+    border-radius: 8px;
+    font-size: 15px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+#btn button:hover {
+    background: #2f2fff;
+}
+
+/* Paragraph */
+p {
+    margin: 20px 0 10px;
+    color: #333;
+}
+
+/* Social Icons */
+.social-icons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+
+.social-icons a {
+    text-decoration: none;
+    font-size: 24px;
+    color: #333;
+    transition: 0.3s;
+}
+
+.social-icons a:hover {
+    color: #4a4aff;
+    transform: scale(1.2);
+}
+
+#register
+{
+    text-decoration: none;
+    color: #fbf8f8;
+}
