@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}App{% endblock %}</title>
+    <style>
+      body, html {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+        width: 100%;
+        background: #000;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      }
+      canvas#network-canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+        display: block;
+      }
+      .page-content {
+        position: relative;
+        z-index: 10; /* make sure it's above canvas */
+      }
+    </style>
+    {% block head %}{% endblock %}
+  </head>
+  <body>
+    <canvas id="network-canvas"></canvas>
+
+    <div class="page-content">
+      {% block content %}{% endblock %}
+    </div>
+
+    <!-- shared canvas script -->
+    <script>
+      const canvas = document.getElementById("network-canvas");
+      const ctx = canvas.getContext("2d");
+      let particles = [];
+      let animationId;
+      let mouse = { x: null, y: null };
+
+      function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+
+      function createParticles(count) {
+        for (let i = 0; i < count; i++) {
+          particles.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            vx: (Math.random() - 0.5) * 0.4,
+            vy: (Math.random() - 0.5) * 0.4,
+            size: Math.random() * 2 + 1
+          });
+        }
+      }
+
+      function updateParticles() {
+        particles.forEach(p => {
+          p.x += p.vx;
+          p.y += p.vy;
+
+          if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+          if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+
+          if (mouse.x !== null && mouse.y !== null) {
+            const dx = mouse.x - p.x;
+            const dy = mouse.y - p.y;
+            const distance = Math.sqrt(dx*dx + dy*dy);
+            if (distance < 100) {
+              p.x += dx * 0.005;
+              p.y += dy * 0.005;
+            }
+          }
+        });
+      }
+
+      function drawParticles() {
+        ctx.fillStyle = "#00bcd4";
+        particles.forEach(p => {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+          ctx.fill();
+        });
+      }
+
+      function drawConnections() {
+        for (let i = 0; i < particles.length; i++) {
+          for (let j = i+1; j < particles.length; j++) {
+            const dx = particles[i].x - particles[j].x;
+            const dy = particles[i].y - particles[j].y;
+            const distance = Math.sqrt(dx*dx + dy*dy);
+            if (distance < 120) {
+              const opacity = (120 - distance)/120 * 0.5;
+              ctx.strokeStyle = `rgba(0,188,212,${opacity})`;
+              ctx.beginPath();
+              ctx.moveTo(particles[i].x, particles[i].y);
+              ctx.lineTo(particles[j].x, particles[j].y);
+              ctx.stroke();
+            }
+          }
+        }
+      }
+
+      function animate() {
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        updateParticles();
+        drawConnections();
+        drawParticles();
+        animationId = requestAnimationFrame(animate);
+      }
+
+      function addCircularParticles(x, y, count=25, radius=60) {
+        for (let i = 0; i < count; i++) {
+          const angle = (i / count) * Math.PI*2;
+          const px = x + radius * Math.cos(angle);
+          const py = y + radius * Math.sin(angle);
+          particles.push({
+            x: px,
+            y: py,
+            vx: (Math.random()-0.5)*1,
+            vy: (Math.random()-0.5)*1,
+            size: Math.random()*2 + 1
+          });
+        }
+      }
+
+      function init() {
+        resizeCanvas();
+        particles = [];
+        createParticles(Math.floor((canvas.width*canvas.height)/15000));
+        cancelAnimationFrame(animationId);
+        animate();
+      }
+
+      window.addEventListener("resize", init);
+      canvas.addEventListener("mousemove", e => {
+        const rect = canvas.getBoundingClientRect();
+        mouse.x = e.clientX - rect.left;
+        mouse.y = e.clientY - rect.top;
+      });
+      canvas.addEventListener("mouseleave", () => { mouse.x = null; mouse.y = null; });
+      canvas.addEventListener("click", e => {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        addCircularParticles(x, y, 15, 60);
+      });
+
+      init();
+    </script>
+    {% block scripts %}{% endblock %}
+  </body>
+</html>
