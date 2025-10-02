@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: auth-app
+    runtime: python
+    buildCommand: ""
+    startCommand: gunicorn app:app
+    envVars:
+      - key: FLASK_ENV
+        value: development
+      - key: FLASK_APP
+        value: app.py
+      - key: SECRET_KEY
+        value: jT8kP2nY!Aq7R^sF9dZxW*LmVg3UoE1Q
+      - key: GOOGLE_CLIENT_ID
+        value: 228554695843-h0banglicgnk8vclgp84fic3nqg72mmd.apps.googleusercontent.com
+      - key: GOOGLE_CLIENT_SECRET
+        value: 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
+      - key: GOOGLE_REDIRECT_URI
+        value: https://auth-app.onrender.com/auth/callback
+      - key: SPOTIFY_CLIENT_ID
+        value: f22afa49b5eb43f491f66cb4ba3a1bb7
+      - key: SPOTIFY_CLIENT_SECRET
+        value: 47381378f1b443679288bfdea468f0fb
+      - key: SPOTIFY_REDIRECT_URI
+        value: https://auth-app.onrender.com/spotify/callback
+      - key: DATABASE_URI
+        value: mysql+pymysql://root:Aditya1250sh@<YOUR-REMOTE-HOST>:3306/auth_db
