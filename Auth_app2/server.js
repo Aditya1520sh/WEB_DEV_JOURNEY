@@ -4,10 +4,10 @@ import dotenv from "dotenv";
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { Strategy as SpotifyStrategy } from "passport-spotify";
-import sequelize from "./sequelize.js";
+import mongoose from "./sequelize.js"; // renamed file still works, contains mongoose connection
 import User from "./models/User.js";
-import SequelizeStoreInit from "connect-session-sequelize";
-import expressLayouts from "express-ejs-layouts"; // ✅ Layouts support added
+import MongoStore from "connect-mongo";
+import expressLayouts from "express-ejs-layouts";
 
 dotenv.config();
 const app = express();
@@ -16,31 +16,34 @@ const PORT = process.env.PORT || 5000;
 // Views
 app.set("view engine", "ejs");
 app.set("views", "./views");
-app.use(expressLayouts); // ✅ Enable layout support
-app.set("layout", "base"); // ✅ Set default layout (views/base.ejs)
+app.use(expressLayouts);
+app.set("layout", "base");
 
 app.use(express.urlencoded({ extended: true }));
 
-// Session store
-const SequelizeStore = SequelizeStoreInit(session.Store);
-const sessionStore = new SequelizeStore({ db: sequelize });
-
+// Session store using MongoDB
 app.use(session({
   secret: process.env.SECRET_KEY,
-  store: sessionStore,
   resave: false,
   saveUninitialized: false,
+  store: MongoStore.create({
+    mongoUrl: process.env.DB_URI,
+    collectionName: "sessions",
+  }),
 }));
-sessionStore.sync();
 
 // Passport
 app.use(passport.initialize());
 app.use(passport.session());
 
-passport.serializeUser((user, done) => done(null, user.id));
+passport.serializeUser((user, done) => done(null, user._id));
 passport.deserializeUser(async (id, done) => {
-  const user = await User.findByPk(id);
-  done(null, user);
+  try {
+    const user = await User.findById(id);
+    done(null, user);
+  } catch (err) {
+    done(err, null);
+  }
 });
 
 // Google OAuth
@@ -50,10 +53,11 @@ passport.use(new GoogleStrategy({
   callbackURL: process.env.GOOGLE_REDIRECT_URI,
 }, async (accessToken, refreshToken, profile, done) => {
   try {
-    let user = await User.findOne({ where: { google_id: profile.id } });
+    let user = await User.findOne({ google_id: profile.id });
     if (!user && profile.emails?.length) {
-      user = await User.findOne({ where: { email: profile.emails[0].value } });
+      user = await User.findOne({ email: profile.emails[0].value });
     }
+
     if (user) {
       user.google_id = profile.id;
       user.name = profile.displayName || user.name;
@@ -73,6 +77,7 @@ passport.use(new GoogleStrategy({
         last_login: new Date(),
       });
     }
+
     done(null, user);
   } catch (err) {
     done(err, null);
@@ -86,10 +91,11 @@ passport.use(new SpotifyStrategy({
   callbackURL: process.env.SPOTIFY_REDIRECT_URI,
 }, async (accessToken, refreshToken, profile, done) => {
   try {
-    let user = await User.findOne({ where: { spotify_id: profile.id } });
+    let user = await User.findOne({ spotify_id: profile.id });
     if (!user && profile.emails?.length) {
-      user = await User.findOne({ where: { email: profile.emails[0].value } });
+      user = await User.findOne({ email: profile.emails[0].value });
     }
+
     if (user) {
       user.spotify_id = profile.id;
       user.name = profile.displayName || user.name;
@@ -107,6 +113,7 @@ passport.use(new SpotifyStrategy({
         last_login: new Date(),
       });
     }
+
     done(null, user);
   } catch (err) {
     done(err, null);
@@ -132,6 +139,6 @@ app.get("/logout", (req, res) => {
 
 // Start server
 const HOST = '127.0.0.1';
-sequelize.sync().then(() => {
-  app.listen(PORT, HOST, () => console.log(`🚀 Server running at http://${HOST}:${PORT}`));
+app.listen(PORT, HOST, () => {
+  console.log(`🚀 Server running at http://${HOST}:${PORT}`);
 });

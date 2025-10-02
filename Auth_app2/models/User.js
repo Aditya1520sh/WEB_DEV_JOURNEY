@@ -1,19 +1,25 @@
-import { DataTypes } from "sequelize";
-import sequelize from "../sequelize.js";
+import mongoose from 'mongoose';
 
-const User = sequelize.define("User", {
-  id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
-  google_id: { type: DataTypes.STRING, unique: true },
-  spotify_id: { type: DataTypes.STRING, unique: true },
-  name: { type: DataTypes.STRING },
-  email: { type: DataTypes.STRING, unique: true },
-  picture: { type: DataTypes.STRING },
-  locale: { type: DataTypes.STRING },
-  created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
-  last_login: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
-}, {
-  tableName: 'users',   // explicitly specify the table name
-  timestamps: false,    // since you are using created_at and last_login manually
-});
+// Define schema for the User model
+const UserSchema = new mongoose.Schema(
+  {
+    google_id: { type: String, unique: true },
+    spotify_id: { type: String, unique: true },
+    name: { type: String },
+    email: { type: String, unique: true },
+    picture: { type: String },
+    locale: { type: String },
+    created_at: { type: Date, default: Date.now },
+    last_login: { type: Date, default: Date.now },
+  },
+  {
+    collection: 'users', // explicitly specify the collection name
+    timestamps: false,    // since you're using created_at and last_login manually
+  }
+);
 
+// Create a model based on the schema
+const User = mongoose.model('User', UserSchema);
+
+// Export the User model
 export default User;
