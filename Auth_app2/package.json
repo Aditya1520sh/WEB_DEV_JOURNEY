@@ -4,13 +4,13 @@
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "nodemon server.js"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
     "body-parser": "^1.20.2",
     "connect-mongo": "^5.1.0",
-    "connect-session-sequelize": "^7.1.5",
     "dotenv": "^16.6.1",
     "ejs": "^3.1.9",
     "express": "^4.21.2",
@@ -18,17 +18,15 @@
     "express-session": "^1.18.2",
     "mongodb": "^6.20.0",
     "mongoose": "^8.18.3",
-    "mysql2": "^3.15.1",
     "passport": "^0.6.0",
     "passport-google-oauth20": "^2.0.0",
-    "passport-spotify": "^2.0.0",
-    "sequelize": "^6.37.7"
+    "passport-spotify": "^2.0.0"
   },
-  "description": "",
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "devDependencies": {
     "nodemon": "^3.1.10"
-  }
+  },
+  "description": "Authentication app using Node.js, Express, MongoDB, and OAuth2",
+  "keywords": ["nodejs", "express", "oauth2", "mongodb", "passport", "auth"],
+  "author": "Aditya",
+  "license": "ISC"
 }

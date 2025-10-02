@@ -1,0 +1,26 @@
+{
+  "version": 3,
+  "builds": [
+    {
+      "src": "server.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "server.js"
+    }
+  ],
+  "env": {
+    "PORT": "5000",
+    "GOOGLE_CLIENT_ID": "@google_client_id",
+    "GOOGLE_CLIENT_SECRET": "@google_client_secret",
+    "GOOGLE_REDIRECT_URI": "@google_redirect_uri",
+    "SPOTIFY_CLIENT_ID": "@spotify_client_id",
+    "SPOTIFY_CLIENT_SECRET": "@spotify_client_secret",
+    "SPOTIFY_REDIRECT_URI": "@spotify_redirect_uri",
+    "DB_URI": "@db_uri",
+    "SECRET_KEY": "@secret_key"
+  }
+}
