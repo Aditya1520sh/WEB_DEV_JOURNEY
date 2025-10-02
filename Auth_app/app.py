@@ -34,9 +34,10 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 class User(db.Model):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True)
-    google_id = Column(String(255), unique=True, nullable=False)
+    google_id = Column(String(255), unique=True, nullable=True)   # ✅ google id
+    spotify_id = Column(String(255), unique=True, nullable=True)  # ✅ spotify id
     name = Column(String(255))
-    email = Column(String(255))
+    email = Column(String(255), unique=True, nullable=True)       # ✅ unique email
     picture = Column(String(500))
     locale = Column(String(50))
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
@@ -58,9 +59,11 @@ def get_db_session():
         db_session.close()
 
 # -------------------------------
-# OAuth setup (Google)
+# OAuth setup (Google + Spotify)
 # -------------------------------
 oauth = OAuth(app)
+
+# Google OAuth
 oauth.register(
     name="google",
     client_id=os.getenv("GOOGLE_CLIENT_ID"),
@@ -74,6 +77,17 @@ oauth.register(
     api_base_url="https://www.googleapis.com/oauth2/v1/",
     userinfo_endpoint="https://openidconnect.googleapis.com/v1/userinfo",
     jwks_uri="https://www.googleapis.com/oauth2/v3/certs",
+)
+
+# Spotify OAuth
+oauth.register(
+    name="spotify",
+    client_id=os.getenv("SPOTIFY_CLIENT_ID"),
+    client_secret=os.getenv("SPOTIFY_CLIENT_SECRET"),
+    authorize_url="https://accounts.spotify.com/authorize",
+    access_token_url="https://accounts.spotify.com/api/token",
+    api_base_url="https://api.spotify.com/v1/",
+    client_kwargs={"scope": "user-read-email user-read-private"},
 )
 
 # -------------------------------
@@ -94,6 +108,7 @@ def login_required(f):
 def index():
     return render_template("login.html")
 
+# ---------------- Google Login ----------------
 @app.route("/login")
 def login():
     redirect_uri = url_for("auth_callback", _external=True)
@@ -116,14 +131,23 @@ def auth_callback():
 
     try:
         with get_db_session() as dbs:
+            # Step 1: Find by google_id
             user = dbs.query(User).filter(User.google_id == google_id).first()
+
+            # Step 2: Agar google_id nahi mila toh email check kar
+            if not user and email:
+                user = dbs.query(User).filter(User.email == email).first()
+
             if user:
-                user.name = name
-                user.email = email
-                user.picture = picture
-                user.locale = locale
+                # Existing user update
+                user.google_id = google_id
+                user.name = name or user.name
+                user.email = email or user.email
+                user.picture = picture or user.picture
+                user.locale = locale or user.locale
                 user.last_login = now
             else:
+                # New user create
                 user = User(
                     google_id=google_id,
                     name=name,
@@ -134,6 +158,7 @@ def auth_callback():
                     last_login=now
                 )
                 dbs.add(user)
+
             dbs.flush()
             session["user_id"] = user.id
     except Exception as e:
@@ -145,6 +170,69 @@ def auth_callback():
 
     return redirect(url_for("profile"))
 
+# ---------------- Spotify Login ----------------
+@app.route("/spotify/login")
+def spotify_login():
+    redirect_uri = url_for("spotify_callback", _external=True)
+    return oauth.spotify.authorize_redirect(redirect_uri)
+
+@app.route("/spotify/callback")
+def spotify_callback():
+    token = oauth.spotify.authorize_access_token()
+    if not token:
+        flash("Spotify authorization failed.", "danger")
+        return redirect(url_for("index"))
+
+    user_info = oauth.spotify.get("me").json()
+    spotify_id = user_info.get("id")
+    name = user_info.get("display_name")
+    email = user_info.get("email")
+    picture = None
+    if user_info.get("images") and len(user_info["images"]) > 0:
+        picture = user_info["images"][0]["url"]
+
+    now = datetime.now(timezone.utc)
+
+    try:
+        with get_db_session() as dbs:
+            # Step 1: Find by spotify_id
+            user = dbs.query(User).filter(User.spotify_id == spotify_id).first()
+
+            # Step 2: Agar spotify_id nahi mila toh email check kar
+            if not user and email:
+                user = dbs.query(User).filter(User.email == email).first()
+
+            if user:
+                # Existing user update
+                user.spotify_id = spotify_id
+                user.name = name or user.name
+                user.email = email or user.email
+                user.picture = picture or user.picture
+                user.last_login = now
+            else:
+                # New user create
+                user = User(
+                    spotify_id=spotify_id,
+                    name=name,
+                    email=email,
+                    picture=picture,
+                    created_at=now,
+                    last_login=now
+                )
+                dbs.add(user)
+
+            dbs.flush()
+            session["user_id"] = user.id
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        app.logger.error(f"DB Error: {e}")
+        flash("Internal error saving Spotify user.", "danger")
+        return redirect(url_for("index"))
+
+    return redirect(url_for("profile"))
+
+# ---------------- Profile / Logout ----------------
 @app.route("/profile")
 @login_required
 def profile():
@@ -154,7 +242,6 @@ def profile():
         session.clear()
         return redirect(url_for("index"))
     return render_template("profile.html", user=user)
-
 
 @app.route("/logout")
 def logout():

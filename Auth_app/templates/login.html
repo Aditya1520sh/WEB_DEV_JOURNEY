@@ -2,17 +2,16 @@
 {% block title %}Sign In{% endblock %}
 {% block content %}
 <style>
-  /* Pure CSS for centering */
   html, body {
     height: 100%;
     margin: 0;
-    background: black; /* tumhara background */
+    background: black; 
   }
   .center-container {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;  /* Full viewport height */
+    height: 100vh;  
   }
   .login-card {
     background: rgba(255, 255, 255, 0.06);
@@ -36,8 +35,9 @@
 <div class="center-container">
   <div class="login-card">
     <h1 style="margin:0 0 8px 0; font-size:28px;">Welcome</h1>
-    <p style="margin:8px 0 20px 0;">Sign in with your Google account to continue</p>
+    <p style="margin:8px 0 20px 0;">Sign in with your account to continue</p>
 
+    <!-- Google Sign-in -->
     <a href="{{ url_for('login') }}" class="sign-btn">
       <svg class="sign-icon" viewBox="0 0 24 24" width="20" height="20" style="flex:0 0 20px;">
         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -48,9 +48,23 @@
       <span style="color:#000; font-weight:600; padding:8px 12px; border-radius:8px; background:white;">Sign in with Google</span>
     </a>
 
+    <!-- Spotify Sign-in -->
+    <a href="{{ url_for('spotify_login') }}" class="sign-btn" style="margin-top:12px;">
+      <svg class="sign-icon" viewBox="0 0 168 168" width="20" height="20" style="flex:0 0 20px;">
+        <path fill="#1DB954" d="M84,0C37.6,0,0,37.6,0,84s37.6,84,84,84s84-37.6,84-84S130.4,0,84,0z M121.1,121.1c-2,3.3-6.3,4.3-9.6,2.3
+          c-26.2-16-59.3-19.6-98.1-10.8c-3.7,0.8-7.4-1.6-8.2-5.3c-0.8-3.7,1.6-7.4,5.3-8.2c41.2-8.9,77.6-5,106.2,12.2
+          C122.4,114.2,123.1,117.8,121.1,121.1z M132.2,97.4c-2.5,4-7.8,5.3-11.7,2.8c-30.1-18.3-75.9-23.7-111.5-13.1
+          c-4.5,1.2-9.2-1.5-10.4-6c-1.2-4.5,1.5-9.2,6-10.4c38.9-10.5,88.8-4.7,122.6,15.2C133.1,88.3,134.7,93.5,132.2,97.4z M134,72
+          c-34.3-21.4-91.5-23.3-119-12.9c-5.1,1.7-10.7-1.1-12.4-6.2c-1.7-5.1,1.1-10.7,6.2-12.4c30.1-9.9,91.3-7.6,128.3,14.1
+          c4.6,2.9,6.2,9,3.3,13.6C143.5,73.6,138.6,74.9,134,72z"/>
+      </svg>
+      <span style="color:#000; font-weight:600; padding:8px 12px; border-radius:8px; background:white;">Sign in with Spotify</span>
+    </a>
+
     <div style="margin-top:12px; color:rgba(255,255,255,0.6); font-size:0.9rem;">
       By signing in you accept our terms.
     </div>
   </div>
 </div>
+
 {% endblock %}
