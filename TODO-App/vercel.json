@@ -1,10 +1,5 @@
 {
   "version": 2,
-  "functions": {
-    "api/server.js": {
-      "runtime": "nodejs20.x"
-    }
-  },
   "routes": [
     { "src": "/todos(.*)", "dest": "/api/server.js" },
     { "src": "/api/(.*)", "dest": "/api/server.js" },
