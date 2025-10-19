@@ -17,7 +17,14 @@ Notes:
 - Per-user isolation without login via a tenant cookie; each browser gets its own isolated list
 - Frontend: Vanilla HTML/CSS/JS using fetch()
 
-For MongoDB Atlas (cloud):
-- Get your connection string from MongoDB Atlas
-- Update `MONGODB_URI` in `.env` file with your Atlas connection string
-- Example: `mongodb+srv://<username>:<password>@<cluster>.mongodb.net/?retryWrites=true&w=majority`
+
+# Deploying to Vercel
+
+1. Make sure your MongoDB is accessible from the cloud (MongoDB Atlas recommended).
+2. Set your environment variables (`MONGODB_URI`, `MONGODB_DB`) in the Vercel dashboard (Project > Settings > Environment Variables).
+3. Deploy via Vercel CLI or GitHub import:
+   - `vercel --prod` (if you have Vercel CLI installed)
+   - Or connect your repo to Vercel and deploy from the dashboard.
+4. The API and frontend will be served from Vercel serverless functions and static hosting.
+
+**Note:** Local MongoDB will not work on Vercel. Use MongoDB Atlas or another cloud MongoDB provider.

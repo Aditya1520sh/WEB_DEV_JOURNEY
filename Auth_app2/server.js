@@ -8,6 +8,7 @@ import mongoose from "./sequelize.js"; // renamed file still works, contains mon
 import User from "./models/User.js";
 import MongoStore from "connect-mongo";
 import expressLayouts from "express-ejs-layouts";
+import { Strategy as GitHubStrategy } from "passport-github2";
 
 dotenv.config();
 const app = express();
@@ -120,6 +121,43 @@ passport.use(new SpotifyStrategy({
   }
 }));
 
+// GitHub OAuth
+passport.use(new GitHubStrategy({
+  clientID: process.env.GITHUB_CLIENT_ID,
+  clientSecret: process.env.GITHUB_CLIENT_SECRET,
+  callbackURL: process.env.GITHUB_REDIRECT_URI,
+  scope: ["user:email"]
+}, async (accessToken, refreshToken, profile, done) => {
+  try {
+    let user = await User.findOne({ github_id: profile.id });
+    if (!user && profile.emails?.length) {
+      user = await User.findOne({ email: profile.emails[0].value });
+    }
+
+    if (user) {
+      user.github_id = profile.id;
+      user.name = profile.displayName || user.username || user.name;
+      user.email = profile.emails?.[0]?.value || user.email;
+      user.picture = profile.photos?.[0]?.value || user.picture;
+      user.last_login = new Date();
+      await user.save();
+    } else {
+      user = await User.create({
+        github_id: profile.id,
+        name: profile.displayName || profile.username,
+        email: profile.emails?.[0]?.value,
+        picture: profile.photos?.[0]?.value,
+        created_at: new Date(),
+        last_login: new Date(),
+      });
+    }
+
+    done(null, user);
+  } catch (err) {
+    done(err, null);
+  }
+}));
+
 // Routes
 app.get("/", (req, res) => res.render("login"));
 app.get("/login", passport.authenticate("google", { scope: ["profile", "email"] }));
@@ -127,6 +165,9 @@ app.get("/auth/callback", passport.authenticate("google", { failureRedirect: "/"
 
 app.get("/spotify/login", passport.authenticate("spotify", { scope: ["user-read-email", "user-read-private"] }));
 app.get("/spotify/callback", passport.authenticate("spotify", { failureRedirect: "/" }), (req, res) => res.redirect("/profile"));
+
+app.get("/github/login", passport.authenticate("github"));
+app.get("/github/callback", passport.authenticate("github", { failureRedirect: "/" }), (req, res) => res.redirect("/profile"));
 
 app.get("/profile", (req, res) => {
   if (!req.isAuthenticated()) return res.redirect("/");

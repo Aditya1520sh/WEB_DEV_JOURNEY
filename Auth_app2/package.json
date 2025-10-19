@@ -19,14 +19,23 @@
     "mongodb": "^6.20.0",
     "mongoose": "^8.18.3",
     "passport": "^0.6.0",
+    "passport-github2": "^0.1.12",
     "passport-google-oauth20": "^2.0.0",
+    "passport-linkedin-oauth2": "^2.0.0",
     "passport-spotify": "^2.0.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
   },
   "description": "Authentication app using Node.js, Express, MongoDB, and OAuth2",
-  "keywords": ["nodejs", "express", "oauth2", "mongodb", "passport", "auth"],
+  "keywords": [
+    "nodejs",
+    "express",
+    "oauth2",
+    "mongodb",
+    "passport",
+    "auth"
+  ],
   "author": "Aditya",
   "license": "ISC"
 }
