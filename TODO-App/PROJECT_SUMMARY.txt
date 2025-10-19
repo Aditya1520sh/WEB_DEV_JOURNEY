@@ -1,0 +1,76 @@
+=========================================
+ TODO APP - QUICK SUMMARY (Hinglish)
+=========================================
+
+High-level Idea:
+- Ye ek full-stack Todo app hai jisme backend (Node.js + Express + MongoDB) REST API provide karta hai, aur frontend (HTML/CSS/JS) us API ko use karke bina page reload ke todos ko manage karta hai.
+
+Architecture (1-Minute View):
+- Backend:
+  - server.js: Express app + static serve + /todos routes mount + JSON middleware + cookie-parser + tenant middleware (per-user isolation) + port 3000
+  - db.js: MongoDB connection (via official driver) + `todos` collection + indexes ({tenantId,id} unique) + SQLite-like adapter (run/get/all)
+  - routes/todos.js: CRUD endpoints (POST/GET/GET/:id/PUT/:id/DELETE/:id) – adapter ke through MongoDB operations
+- Frontend (public/):
+  - index.html: Page structure + header stats + form + list container + footer
+  - style.css: Modern light theme + animations + responsive layout
+  - script.js: fetch() calls, DOM updates, edit mode, validations, messages
+
+Data Model (MongoDB - todos collection):
+- _id (ObjectId, internal)
+- tenantId (string, per-user isolation via cookie)
+- id (number, per-tenant unique, human-friendly incremental)
+- title (string, required)
+- description (string, optional)
+- completed (number 0/1 → boolean in UI)
+- created_at (ISO string, Date.toISOString())
+
+REST API (JSON I/O):
+- POST   /todos        → Create todo
+  Body: { title, description }
+  201 → New todo object (id assigned per-tenant)
+- GET    /todos        → Get all todos (latest first, created_at desc)
+- GET    /todos/:id    → Get single todo by id
+- PUT    /todos/:id    → Update todo
+  Body: { title, description, completed }
+- DELETE /todos/:id    → Remove todo
+
+Frontend UX Highlights:
+- Light theme, clean cards, hover/scale animations
+- Live stats (Total / Done / Pending)
+- Add, Edit, Delete, Toggle Complete (custom checkbox)
+- Clear Completed (bulk delete)
+- Success/Error messages with slide-in effect
+- Mobile responsive, Poppins font, smooth transitions
+
+Key Flows (very short):
+- Create: Form submit → POST /todos → adapter insertOne → fetchTodos() → re-render
+- Read: Page load → GET /todos → adapter find().sort() → renderTodos()
+- Update: Edit → PUT /todos/:id → adapter updateOne → stopEdit() → fetchTodos()
+- Delete: Confirm → DELETE /todos/:id → adapter deleteOne → fetchTodos()
+- Toggle: Click checkbox → PUT /todos/:id (completed flip) → fetchTodos()
+
+Validation & Errors:
+- Backend: Title required (400), Not found (404), DB issues (500)
+- Frontend: Empty title block, confirmations for delete/clear, toast-like messages
+- Tenant cookie required for per-user data isolation (auto-set by middleware)
+
+How to Run (Local):
+1) npm install
+2) (Optional) .env create karo:
+  MONGODB_URI=mongodb://127.0.0.1:27017
+  MONGODB_DB=todoapp
+3) npm start
+4) Open http://localhost:3000
+(First run me MongoDB pe `todos` collection auto-create ho jayegi)
+
+Troubleshooting (quick):
+- API fail: Server running? Console/Network check.
+- DB issue: MongoDB server up? .env URI/DB sahi? Local 27017 reachable?
+- CSS not applied: Cache bypass (Ctrl+Shift+R), path check.
+- Multi-tenant: Ensure cookies allowed (tid cookie set ho rahi hai?)
+
+Possible Next Steps:
+- Auth, tags/categories, due dates, search/filter, drag-drop, theme toggle, export/import.
+- Text index for search, counters-based id allocation, cloud MongoDB (Atlas) config.
+
+That’s it — jaldi me poora app samajhne ke liye itna kaafi hai. 🚀

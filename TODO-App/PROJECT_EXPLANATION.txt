@@ -1,0 +1,932 @@
+================================================================================
+            TODO APP - COMPLETE WORKING EXPLANATION
+               (HINGLISH ME SAMJHAYA GAYA HAI)
+================================================================================
+
+📌 PROJECT OVERVIEW (Poora Project Ka Overview)
+--------------------------------------------------------------------------------
+Ye ek full-stack Todo application hai jo Node.js, Express, aur MongoDB use karta 
+hai backend ke liye, aur simple HTML/CSS/JavaScript use karta hai frontend ke 
+liye. Is app me user todo items create, read, update, aur delete (CRUD) kar 
+sakta hai.
+
+Backend REST API provide karta hai aur frontend us API ko call karke dynamically
+todos ko display aur manage karta hai bina page refresh kiye.
+
+Important note: Pehle app SQLite use karta tha. Ab database MongoDB par migrate
+kiya gaya hai. Routes ka code mostly same rakha gaya hai kyunki `db.js` ek
+SQLite-like adapter expose karta hai jo MongoDB ke upar same `run/get/all` API
+provide karta hai. Is se migration smooth ho gayi aur frontend/route logic me
+large changes ki zaroorat nahi padi.
+
+
+================================================================================
+                          BACKEND FILES EXPLANATION
+================================================================================
+
+📄 1. package.json
+--------------------------------------------------------------------------------
+KYA HAI: 
+- Ye Node.js project ka configuration file hai
+- Is file me project ki details, dependencies, aur scripts hoti hain
+
+KYA KARTA HAI:
+- Project ka naam, version, description store karta hai
+- Dependencies list karta hai (express, sqlite3)
+- npm scripts define karta hai jaise "npm start" aur "npm run dev"
+
+IMPORTANT DEPENDENCIES:
+- express: Web server aur routing ke liye
+- mongodb: Official MongoDB Node.js driver
+- cookie-parser: Lightweight per-user tenant cookie ke liye
+- dotenv: Environment variables (MONGODB_URI, MONGODB_DB) load karne ke liye
+- nodemon (dev): Development me automatic server restart ke liye
+
+KAISE CHALTA HAI:
+1. npm install run karne pe ye file read hoti hai
+2. Package manager sabhi dependencies download aur install karta hai
+3. npm start command server.js ko run karta hai
+4. .env file (optional) se DB config load hota hai: MONGODB_URI / MONGODB_DB
+
+
+📄 2. server.js
+--------------------------------------------------------------------------------
+KYA HAI:
+- Ye main entry point hai poore backend application ka
+- Express server ko setup aur configure karta hai
+
+KYA KARTA HAI:
+1. Express app create karta hai
+2. Middleware setup karta hai (JSON body parser + cookie-parser)
+3. Tenant middleware enable karta hai jo har user ko ek unique cookie (tid) deta
+   hai – isse per-user data isolation hota hai bina login ke
+4. Static files serve karta hai (HTML, CSS, JS) from 'public' folder
+5. API routes mount karta hai '/todos' path pe
+6. Server ko port 3000 pe listen karta hai
+
+STEP-BY-STEP WORKING:
+1. express.json() middleware har incoming request ki body ko parse karta hai
+2. express.static() middleware frontend files (index.html, style.css, etc.) 
+   serve karta hai
+3. Tenant cookie (`tid`) set/read hoti hai, jo AsyncLocalStorage (ALS) ke
+   through request-scope me available rehti hai. `db.js` is tid ko use karke
+   MongoDB queries ko per-user scope karta hai (multi-tenant style isolation).
+4. '/todos' route pe aane wali requests ko todosRouter handle karta hai
+5. Catch-all route (*) se koi bhi unknown request index.html serve karti hai
+6. Server port 3000 pe start hota hai aur requests listen karta hai
+
+EXAMPLE:
+- GET http://localhost:3000/ → index.html serve hoga
+- POST http://localhost:3000/todos → todosRouter handle karega
+- GET http://localhost:3000/style.css → CSS file serve hogi
+
+
+📄 3. db.js
+KYA HAI:
+- MongoDB connection aur initialization file
+- SQLite-like adapter provide karta hai jisse routes me koi major change ke
+  bina MongoDB pe shift ho sake (same `db.run`, `db.get`, `db.all` signatures)
+
+KYA KARTA HAI:
+1. MongoDB Node.js driver se connection establish karta hai (URI/DB env se)
+2. `todos` collection ensure karta hai aur indexes create karta hai:
+   - Unique compound index: { tenantId: 1, id: 1 }
+   - Sort index: { tenantId: 1, created_at: -1 }
+3. AsyncLocalStorage (ALS) + `tenantMiddleware` se har request me tenantId
+   inject hota hai, jisse har user ka data isolate rahe
+4. SQLite-like adapter implement karta hai:
+   - run(sql, params, cb): INSERT/UPDATE/DELETE ko MongoDB `insertOne`,
+     `updateOne`, `deleteOne` me map karta hai
+   - get(sql, params, cb): Single document fetch ke liye `findOne`
+   - all(sql, params, cb): Multiple documents ke liye `find().toArray()`
+5. Incremental integer `id` maintain karta hai per-tenant. Current
+   implementation latest max(id)+1 approach use karti hai with retry on
+   duplicate key (E11000) to handle concurrency. Unique index race conditions ko
+   gracefully handle karta hai.
+
+DATA MODEL (MongoDB – Collections & Documents):
+- Collection: todos
+- Document fields:
+  - _id: ObjectId (MongoDB default; app is directly `id` integer use karti hai)
+  - tenantId: string (cookie-based per user)
+  - id: integer (per-tenant unique, human-friendly incremental id)
+  - title: string (required)
+  - description: string (optional)
+  - completed: number 0/1 (adapter compatibility ke liye)
+  - created_at: ISO string (Date.toISOString())
+
+NOTE ON COUNTERS:
+- File me `counters` collection ka helper bhi present hai jo `todos:<tenant>`
+  key per sequence track kar sakta hai. Current `run(INSERT)` path latest max
+  id read karke next assign karta hai; unique index + retry backoff se safe hai.
+  Aap counters strategy bhi enable kar sakte ho future optimization ke liye.
+
+STEP-BY-STEP WORKING:
+1. Pehli request par MongoDB se connect hota hai aur `db` reference store karta
+   hai (singleton client)
+2. Indexes ensure karne ke baad adapter functions available ho jate hain
+3. Har request par ALS se tenantId nikalta hai aur queries ko scope karta hai
+4. INSERT/UPDATE/DELETE/SELECT jaisi SQL-like strings ko identify karke MongoDB
+   operations me map karta hai, taki routes ka legacy code compatible rahe
+
+ERROR HANDLING:
+- MongoDB connection errors console me log hote hain
+- Adapter me agar unsupported SQL pass hota hai to descriptive error throw hoti
+  hai jisse debugging asaan hoti hai
+
+
+📄 4. routes/todos.js
+KYA HAI:
+- Express Router jo saare todo CRUD operations handle karta hai
+- Ye file sabhi API endpoints define karti hai
+- Ab ye MongoDB backed adapter (`db.js`) ke through database operations
+   perform karta hai. Routes code SQL-like strings use karta hai par actually
+   MongoDB driver commands execute hote hain under-the-hood.
+
+KYA KARTA HAI:
+- 5 REST API endpoints provide karta hai
+- Database operations perform karta hai (insert, select, update, delete)
+- JSON responses bhejta hai client ko
+
+🔹 ENDPOINT 1: POST /todos (Create Todo)
+KYA KARTA HAI: Naya todo create karke MongoDB me save karta hai
+
+REQUEST BODY:
+{
+  "title": "Buy groceries",
+  "description": "Milk, eggs, bread"
+}
+
+WORKING:
+1. Request body se title aur description extract karta hai
+2. Validation: Agar title empty hai to 400 error return karta hai
+3. Adapter `db.run("INSERT INTO todos ...")` ko call karta hai; ye internally
+   MongoDB `insertOne` perform karta hai aur per-tenant next integer `id`
+   assign karta hai
+4. Adapter callback me `this.lastID` milta hai (compat layer), jisse naya `id`
+   pata chalta hai
+5. Us ID se `db.get` call hoti hai jo MongoDB `findOne` use karke doc fetch
+   karta hai
+6. Response: 201 status code ke saath naya todo object
+
+ERROR CASES:
+- Empty title → 400 Bad Request
+- Database error → 500 Internal Server Error
+
+
+🔹 ENDPOINT 2: GET /todos (Read All Todos)
+KYA KARTA HAI: MongoDB se saare todos fetch karke return karta hai
+
+WORKING:
+1. Adapter `db.all('SELECT * FROM todos ORDER BY created_at DESC')` call karta
+   hai jo internally MongoDB `find({tenantId}).sort({created_at:-1})` karta hai
+2. Saare documents fetch hote hain
+3. mapTodoRow() function se har "row" (doc) ko proper format me convert karta hai
+   (completed ko 0/1 se true/false me convert karta hai)
+4. Array of todos return karta hai
+
+RESPONSE EXAMPLE:
+[
+  {
+    "id": 1,
+    "title": "Buy groceries",
+    "description": "Milk, eggs",
+    "completed": false,
+    "created_at": "2025-10-14 10:30:00"
+  },
+  ...
+]
+
+
+🔹 ENDPOINT 3: GET /todos/:id (Read Single Todo)
+KYA KARTA HAI: Specific ID wale todo ko fetch karta hai
+
+WORKING:
+1. URL params se ID extract karta hai (req.params.id)
+2. Adapter `db.get('SELECT * FROM todos WHERE id = ?')` call karta hai jo
+   internally MongoDB `findOne({tenantId, id})` karta hai
+3. Agar todo mila to return karta hai
+4. Agar nahi mila to 404 Not Found return karta hai
+
+EXAMPLE:
+GET /todos/5 → ID 5 wala todo return hoga
+
+
+🔹 ENDPOINT 4: PUT /todos/:id (Update Todo)
+KYA KARTA HAI: Existing todo ko update karta hai
+
+REQUEST BODY:
+{
+  "title": "Updated title",
+  "description": "Updated description",
+  "completed": true
+}
+
+WORKING:
+1. URL se ID extract karta hai
+2. Body se title, description, completed extract karta hai
+3. Validation: Title empty nahi hona chahiye
+4. completed boolean ko 0/1 me convert karta hai (adapter compatibility)
+5. Adapter `db.run('UPDATE todos SET ... WHERE id = ?')` call karta hai jo
+   internally MongoDB `updateOne({tenantId,id},{ $set: {...} })` karta hai
+6. this.changes check karta hai - agar 0 hai to todo exist nahi karta
+7. Updated todo fetch karke return karta hai via `db.get`
+
+ERROR CASES:
+- Empty title → 400 Bad Request
+- Todo not found → 404 Not Found
+- Database error → 500 Internal Server Error
+
+
+🔹 ENDPOINT 5: DELETE /todos/:id (Delete Todo)
+KYA KARTA HAI: Todo ko database se delete karta hai
+
+WORKING:
+1. URL se ID extract karta hai
+2. Adapter `db.run('DELETE FROM todos WHERE id = ?')` call karta hai jo
+   internally MongoDB `deleteOne({tenantId, id})` karta hai
+3. this.changes check karta hai - agar 0 hai to todo exist nahi karta
+4. Success response return karta hai: { "success": true }
+
+ERROR CASES:
+- Todo not found → 404 Not Found
+- Database error → 500 Internal Server Error
+
+
+🔸 HELPER FUNCTION: mapTodoRow()
+KYA KARTA HAI: Database row (Mongo doc via adapter) ko proper JavaScript object
+me convert karta hai
+
+WHY NEEDED:
+Adapter compatibility ke liye `completed` value 0/1 rakhi jaati hai, jabki UI
+boolean expect karta hai. Ye function 0/1 ko true/false me convert karta hai.
+
+INPUT: { id: 1, title: "...", completed: 0, ... }
+OUTPUT: { id: 1, title: "...", completed: false, ... }
+
+
+================================================================================
+                          FRONTEND FILES EXPLANATION
+================================================================================
+
+📄 5. public/index.html
+--------------------------------------------------------------------------------
+KYA HAI:
+- Main HTML structure file
+- User interface ki skeleton define karti hai
+
+STRUCTURE BREAKDOWN:
+
+🔹 <head> Section:
+- Character encoding aur viewport settings
+- Google Fonts (Poppins) load karti hai
+- style.css link karti hai
+
+🔹 <body> → .app-wrapper:
+Poora app is wrapper me hai
+
+🔹 <header> → .app-header:
+- Logo aur title display hota hai (✨ My Todo List)
+- Statistics badges: Total todos, Completed, Pending
+- Ye real-time update hote hain JavaScript se
+
+🔹 <main> → .container:
+
+  📝 .form-section:
+  - Form card jisme input fields hain
+  - Title input: Todo ka naam
+  - Description textarea: Optional details
+  - Buttons: "Add Todo" aur "Cancel" (edit mode me)
+  - Message div: Success/error messages display ke liye
+
+  📋 .todos-section:
+  - Section header: "Your Tasks" title aur "Clear Completed" button
+  - .todos-grid div: Yahan dynamically todos render honge
+
+🔹 <footer> → .app-footer:
+- Simple footer: "Built with Node.js + Express + SQLite 💙"
+
+🔹 <script>:
+- script.js load karta hai as ES6 module
+
+
+KAISE KAAM KARTA HAI:
+1. Page load hota hai to HTML structure render hota hai
+2. CSS file se styling apply hoti hai
+3. JavaScript file load hoti hai aur todos fetch karti hai
+4. Todos dynamically #todos div me inject hote hain
+5. User interactions (clicks, form submit) JavaScript handle karti hai
+
+
+📄 6. public/style.css
+--------------------------------------------------------------------------------
+KYA HAI:
+- Complete styling file with modern light theme
+- Responsive design aur animations define karti hai
+
+CSS ORGANIZATION:
+
+🔹 :root Variables:
+- CSS custom properties (variables) define karta hai
+- Colors, shadows, borders, transitions ka centralized management
+- Example: --accent: #667eea (purple color for buttons)
+
+MAIN COLOR SCHEME:
+- Background: Gradient purple to violet
+- Cards: White with subtle shadows
+- Text: Dark gray (#1a202c)
+- Accent: Purple (#667eea)
+- Success: Green, Warning: Orange, Danger: Red
+
+🔹 Base Styles:
+- * { box-sizing: border-box } - sabhi elements ke liye
+- body me gradient background aur Poppins font
+- Full height layout using flexbox
+
+🔹 Header Styling (.app-header):
+- Sticky header - scroll karne pe bhi top pe rahega
+- White background with blur effect (glassmorphism)
+- Logo me floating animation hai (@keyframes float)
+- Statistics badges colored aur rounded
+
+🔹 Form Styling:
+- .form-card: White card with shadow aur rounded corners
+- Hover effect: Border color change aur shadow increase
+- Input fields: Border, padding, focus states
+- Focus state: Purple border aur glow effect
+- Buttons: Gradient background, hover effects, scale animation
+
+🔹 Todo Cards (.todo-card):
+- White background with shadow
+- Top border animation on hover (::before pseudo-element)
+- Hover effects: translateY (upar uthta hai), scale, shadow
+- Completed state: Opacity kam aur strikethrough
+
+🔹 Custom Checkbox:
+- Custom styled checkbox (default HTML checkbox nahi)
+- Border, hover effects, check animation
+- Checked state: Green background with checkmark
+
+🔹 Buttons (.icon-btn):
+- Circular icon buttons
+- Hover: Scale aur rotate animation
+- Edit button: Blue hover, Delete button: Red hover
+
+🔹 Animations:
+- @keyframes float: Logo floating animation
+- @keyframes fadeInUp: Cards fade in animation
+- @keyframes slideIn: Message slide in animation
+
+🔹 Responsive Design (@media queries):
+- Mobile devices ke liye adjustments
+- Font sizes reduce hote hain
+- Grid single column me convert hota hai
+- Padding aur margins adjust hote hain
+
+
+KAISE KAAM KARTA HAI:
+1. Browser HTML parse karta hai aur elements create karta hai
+2. CSS file load hoti hai aur sabhi rules apply hote hain
+3. CSS variables se consistent colors aur values use hoti hain
+4. Hover, focus jaise states par dynamic changes apply hote hain
+5. Animations CSS transitions se smooth chalte hain
+6. Media queries se different screen sizes handle hote hain
+
+
+📄 7. public/script.js
+KYA HAI:
+- Frontend logic aur interactivity handle karta hai
+- Backend API se communicate karta hai
+- DOM manipulation karke UI update karta hai
+
+CODE STRUCTURE:
+
+🔹 CONSTANTS aur ELEMENTS:
+- apiBase = '/todos' - Backend API ka base URL
+- elements object - Saare important DOM elements ka reference store karta hai
+- editingId - Currently editing todo ka ID (null if not editing)
+- allTodos - Saare todos ka local copy
+
+🔹 HELPER FUNCTIONS:
+
+📌 showMessage(text, type):
+KYA KARTA HAI: Success/error messages display karta hai
+WORKING:
+1. Message element me text set karta hai
+2. CSS class add karta hai (success/error/info)
+3. 4 seconds baad automatically message clear ho jata hai
+4. Slide-in animation apply hoti hai
+
+📌 updateStats():
+KYA KARTA HAI: Header me statistics update karta hai
+WORKING:
+1. allTodos array se total, completed, pending count nikalta hai
+2. Header badges me ye counts display karta hai
+3. "Clear Completed" button show/hide karta hai
+
+🔹 API FUNCTIONS:
+
+📌 fetchTodos():
+KYA KARTA HAI: Backend se saare todos fetch karta hai
+
+WORKING FLOW:
+1. fetch(apiBase) se GET request bhejta hai
+2. Response ko JSON me convert karta hai
+3. allTodos array me store karta hai
+4. renderTodos() call karke UI update karta hai
+5. updateStats() call karke statistics update karta hai
+6. Error case me error message display karta hai
+
+ASYNC/AWAIT:
+- async function hai - asynchronous operations handle karta hai
+- await response ka wait karta hai
+- try-catch se errors handle karte hain
+
+📌 renderTodos(todos):
+KYA KARTA HAI: Todos ko DOM me render karta hai (sabse important function)
+
+WORKING FLOW:
+1. Pehle #todos container ko empty karta hai
+2. Agar todos empty array hai to empty state message show karta hai
+3. Har todo ke liye ek card create karta hai:
+   
+   a) Card container (.todo-card)
+   b) Header section:
+      - Custom checkbox (click se toggle complete)
+      - Title aur description
+   c) Footer section:
+      - Creation date (Indian format me)
+      - Action buttons (Edit, Delete)
+   
+4. Event listeners attach karta hai:
+   - Checkbox click → toggleComplete()
+   - Edit button click → startEdit()
+   - Delete button click → deleteTodo()
+
+5. Card ko #todos container me append karta hai
+6. CSS animation automatically apply hoti hai (.fade-in class)
+
+DOM CREATION EXAMPLE:
+const card = document.createElement('div');  // Naya div create
+card.className = 'todo-card fade-in';        // Classes add
+const title = document.createElement('h3');  // Title element
+title.textContent = t.title;                 // Text set
+card.appendChild(title);                     // Card me add
+
+📌 Form Submit Handler:
+KYA KARTA HAI: Add/Update todo form submit handle karta hai
+
+WORKING FLOW:
+1. e.preventDefault() - Default form submission stop karta hai
+2. Input values extract karta hai (title, description)
+3. Validation: Title empty nahi hona chahiye
+
+4. EDIT MODE (agar editingId set hai):
+   - PUT request bhejta hai: fetch(`/todos/${editingId}`, { method: 'PUT', ... })
+   - Request body me updated data bhejta hai
+   - Success: "Todo updated" message, stopEdit() call, fetchTodos()
+   
+5. CREATE MODE (agar editingId null hai):
+   - POST request bhejta hai: fetch('/todos', { method: 'POST', ... })
+   - Request body me new todo data bhejta hai
+   - Success: "Todo added" message, form reset, fetchTodos()
+
+6. Error case me error message display karta hai
+
+FETCH API DETAILS:
+fetch(url, {
+  method: 'POST',                           // HTTP method
+  headers: { 'Content-Type': 'application/json' },  // JSON bhej rahe hain
+  body: JSON.stringify({ title, description })      // Object ko JSON string me convert
+})
+
+📌 startEdit(todo):
+KYA KARTA HAI: Edit mode activate karta hai
+
+WORKING:
+1. editingId set karta hai (global variable)
+2. Form fields me existing todo ka data populate karta hai
+3. "Cancel" button show karta hai
+4. Submit button text "Update Todo" me change karta hai
+5. Title input field ko focus karta hai
+6. Form ko smooth scroll karke view me lata hai
+
+📌 stopEdit():
+KYA KARTA HAI: Edit mode cancel karta hai
+
+WORKING:
+1. editingId ko null set karta hai
+2. Form fields ko reset karta hai (empty)
+3. "Cancel" button hide karta hai
+4. Submit button text "Add Todo" me reset karta hai
+
+📌 toggleComplete(todo):
+KYA KARTA HAI: Todo ko complete/incomplete mark karta hai
+
+WORKING:
+1. PUT request bhejta hai same todo data ke saath
+2. Sirf completed field toggle karta hai: !todo.completed
+3. Backend me update hota hai
+4. Success message show karta hai
+5. fetchTodos() se UI refresh hota hai
+
+WHY FULL DATA BHEJTE HAIN:
+Backend ka PUT endpoint complete todo object expect karta hai, sirf completed
+field nahi. Isliye title, description bhi bhejte hain.
+
+📌 deleteTodo(id):
+KYA KARTA HAI: Todo ko delete karta hai
+
+WORKING:
+1. Pehle confirmation dialog show karta hai: confirm("Are you sure?")
+2. Agar user "OK" karta hai to:
+   - DELETE request bhejta hai: fetch(`/todos/${id}`, { method: 'DELETE' })
+3. Success: "Todo deleted" message aur fetchTodos()
+4. Error: Error message display
+
+📌 Clear Completed Handler:
+KYA KARTA HAI: Saare completed todos ko ek saath delete karta hai
+
+WORKING:
+1. allTodos se completed todos filter karta hai
+2. Confirmation dialog: "Delete X completed todo(s)?"
+3. Promise.all() se sabhi delete requests parallel run karte hain
+4. Sabhi complete hone ke baad UI refresh hota hai
+
+PROMISE.ALL EXPLANATION:
+Promise.all([promise1, promise2, ...]) - Saare promises parallel run hote hain
+aur sabhi complete hone ka wait karta hai.
+
+🔹 KEYBOARD SHORTCUTS:
+document.addEventListener('keydown', ...):
+- Escape key press karne se edit mode cancel hota hai
+- Better UX ke liye shortcut
+
+🔹 INITIAL LOAD:
+fetchTodos() - Page load hote hi call hota hai aur todos load karte hain
+
+
+================================================================================
+                        DATA FLOW - COMPLETE CYCLE
+================================================================================
+
+🔄 CREATE TODO FLOW (Naya Todo Add Karna):
+--------------------------------------------------------------------------------
+1. USER ACTION:
+   - User form me title aur description type karta hai
+   - "Add Todo" button click karta hai
+
+2. FRONTEND (script.js):
+   - Form submit event trigger hota hai
+   - preventDefault() form submission stop karta hai
+   - Input validation check hoti hai
+   - fetch() se POST request bhejta hai:
+     URL: http://localhost:3000/todos
+     Body: { "title": "...", "description": "..." }
+
+3. BACKEND (server.js):
+   - Request server pe aati hai
+   - express.json() middleware body parse karta hai
+   - cookie-parser + tenantMiddleware tid cookie manage karta hai
+   - Request '/todos' router ko forward hoti hai
+
+4. BACKEND (routes/todos.js):
+   - POST handler execute hota hai
+   - Title validation check hoti hai
+   - Adapter `db.run("INSERT ...")` call hoti hai jo MongoDB `insertOne`
+     execute karta hai aur next integer id assign karta hai (per-tenant)
+
+5. DATABASE (db.js):
+   - MongoDB driver operation run hota hai (todos collection me insert)
+   - Unique index `{tenantId, id}` maintain karta hai
+   - lastID compatible value adapter ke through return hoti hai
+
+6. BACKEND RESPONSE:
+   - Newly created todo fetch hota hai
+   - JSON response bhejta hai: 201 status + todo object
+
+7. FRONTEND (script.js):
+   - Response receive hota hai
+   - Success message display hota hai
+   - Form reset hota hai
+   - fetchTodos() call hota hai
+   - UI automatically update hota hai
+
+
+🔄 READ TODOS FLOW (Todos Display Karna):
+--------------------------------------------------------------------------------
+1. PAGE LOAD:
+   - Browser index.html load karta hai
+   - CSS load hoke styling apply hoti hai
+   - script.js load hoti hai
+   - fetchTodos() automatically call hota hai
+
+2. FRONTEND (script.js):
+   - fetch(apiBase) se GET request bhejta hai
+
+3. BACKEND (routes/todos.js):
+   - GET handler execute hota hai
+   - Adapter `db.all('SELECT ... ORDER BY created_at DESC')` call karta hai
+     jo MongoDB `find().sort()` me translate hota hai
+
+4. DATABASE:
+   - Saare todos fetch hote hain
+   - Results array me return hote hain
+
+5. BACKEND RESPONSE:
+   - Todos array JSON format me bhejta hai
+
+6. FRONTEND (script.js):
+   - Response receive hota hai
+   - allTodos variable me store hota hai
+   - renderTodos() function call hota hai
+   - Har todo ke liye card create hota hai
+   - DOM me append hota hai
+   - updateStats() statistics update karta hai
+   - User ko todos dikhai dete hain
+
+
+🔄 UPDATE TODO FLOW (Todo Edit Karna):
+--------------------------------------------------------------------------------
+1. USER ACTION:
+   - User kisi todo card pe edit button (✏️) click karta hai
+
+2. FRONTEND (script.js):
+   - startEdit(todo) function call hota hai
+   - editingId set hota hai
+   - Form me existing data populate hota hai
+   - Submit button "Update Todo" text show karta hai
+
+3. USER ACTION:
+   - User changes karta hai form me
+   - "Update Todo" button click karta hai
+
+4. FRONTEND:
+   - Form submit handler run hota hai
+   - Edit mode detect hota hai (editingId !== null)
+    - PUT request bhejta hai:
+       URL: http://localhost:3000/todos/5
+       Body: { "title": "...", "description": "...", "completed": false }
+
+5. BACKEND (routes/todos.js):
+   - PUT handler execute hota hai
+   - ID extract hoti hai URL se
+   - Validation check hoti hai
+   - Adapter `db.run('UPDATE ...')` call hoti hai jo MongoDB `updateOne`
+     execute karta hai
+
+6. DATABASE:
+   - Specific `{tenantId, id}` wale document par updateOne run hota hai
+   - Changes save hote hain
+
+7. BACKEND RESPONSE:
+   - Updated todo fetch hoke return hota hai
+
+8. FRONTEND:
+   - Success message display hota hai
+   - stopEdit() se edit mode cancel hota hai
+   - fetchTodos() se UI refresh hota hai
+   - Updated todo user ko dikhai deta hai
+
+
+🔄 DELETE TODO FLOW (Todo Delete Karna):
+--------------------------------------------------------------------------------
+1. USER ACTION:
+   - User delete button (🗑️) click karta hai
+
+2. FRONTEND (script.js):
+   - deleteTodo(id) function call hota hai
+   - Confirmation dialog show hota hai: "Are you sure?"
+
+3. USER CONFIRMS:
+   - User "OK" click karta hai
+
+4. FRONTEND:
+   - DELETE request bhejta hai:
+     URL: http://localhost:3000/todos/5
+     Method: DELETE
+
+5. BACKEND (routes/todos.js):
+   - DELETE handler execute hota hai
+   - Adapter `db.run('DELETE FROM ...')` call hoti hai jo MongoDB `deleteOne`
+     execute karta hai
+
+6. DATABASE:
+   - Specific `{tenantId, id}` wala document delete hota hai
+   - Document permanently remove hota hai
+
+7. BACKEND RESPONSE:
+   - Success response: { "success": true }
+
+8. FRONTEND:
+   - Success message display hota hai
+   - fetchTodos() se UI refresh hota hai
+   - Deleted todo UI se gayab ho jata hai
+
+
+🔄 TOGGLE COMPLETE FLOW (Todo Complete Mark Karna):
+--------------------------------------------------------------------------------
+1. USER ACTION:
+   - User checkbox click karta hai
+
+2. FRONTEND:
+   - toggleComplete(todo) function call hota hai
+   - PUT request bhejta hai with completed: !todo.completed
+
+3. BACKEND:
+   - Adapter `db.run('UPDATE ... completed = ?')` mongo `updateOne` me
+     translate hota hai aur todo update hota hai
+
+4. FRONTEND:
+   - UI refresh hota hai
+   - Completed todo strikethrough aur faded dikhta hai
+   - Statistics update hote hain (Done count increase)
+
+
+================================================================================
+                          KEY CONCEPTS EXPLAINED
+================================================================================
+
+🔸 REST API:
+- Representational State Transfer
+- HTTP methods se operations define karte hain:
+  POST = Create, GET = Read, PUT = Update, DELETE = Delete
+- URLs se resources identify karte hain: /todos, /todos/5
+- JSON format me data exchange hota hai
+
+🔸 CRUD Operations:
+- Create: Naya data add karna (POST)
+- Read: Data fetch karna (GET)
+- Update: Existing data modify karna (PUT)
+- Delete: Data remove karna (DELETE)
+
+🔸 Express Router:
+- Routes ko organize karne ka tarika
+- Different files me different routes define kar sakte hain
+- Modular aur maintainable code
+
+🔸 MongoDB:
+- Document-oriented NoSQL database (collections & documents)
+- Flexible schema: har document JSON-like structure hota hai
+- Powerful indexes, sharding/scaling options, aur high concurrency support
+- Is project me `todos` collection use hota hai with fields: tenantId, id,
+  title, description, completed (0/1), created_at (ISO string)
+  - `_id` (ObjectId) MongoDB ka internal primary key hota hai, app user-facing
+   integer `id` maintain karti hai per-tenant
+
+🔸 Async/Await:
+- JavaScript me asynchronous operations handle karne ka modern tarika
+- async function asynchronous operation perform kar sakta hai
+- await keyword operation complete hone ka wait karta hai
+- Cleaner code compared to callbacks aur promises
+
+🔸 Fetch API:
+- Browser built-in API for HTTP requests
+- Promise-based - async/await ke saath use kar sakte hain
+- JSON data automatically handle kar sakta hai
+
+🔸 DOM Manipulation:
+- JavaScript se HTML elements create, modify, delete karna
+- document.createElement(), appendChild(), innerHTML, etc.
+- Dynamic UI updates bina page reload kiye
+
+🔸 Event Listeners:
+- User interactions handle karne ka tarika
+- addEventListener() se events listen karte hain
+- Examples: click, submit, keydown, etc.
+
+🔸 CSS Animations:
+- @keyframes se custom animations define karte hain
+- transition property se smooth changes
+- transform property se position, scale, rotate changes
+
+
+================================================================================
+                          COMMON OPERATIONS
+================================================================================
+
+✅ Server Start Karna:
+1. Terminal open karo
+2. Project folder me jao: cd TODO-App
+3. Dependencies install karo: npm install
+4. (Optional) .env create karo:
+   MONGODB_URI=mongodb://127.0.0.1:27017
+   MONGODB_DB=todoapp
+5. Server start karo: npm start
+5. Browser me jao: http://localhost:3000
+
+MongoDB Setup Notes:
+- Local dev ke liye MongoDB Community edition install karo ya Docker use karo
+- Default URI: mongodb://127.0.0.1:27017 (no auth) works out-of-the-box
+- First run par `todos` collection auto create ho jayegi jab pehla insert hoga
+
+✅ Naya Todo Add Karna:
+1. Title field me todo naam type karo
+2. Description field me optional details add karo
+3. "Add Todo" button click karo
+4. Todo list me naya card appear hoga
+
+✅ Todo Edit Karna:
+1. Kisi todo card pe ✏️ (edit) button click karo
+2. Form me data automatically populate hoga
+3. Changes karo
+4. "Update Todo" button click karo
+5. Todo update ho jayega
+
+✅ Todo Complete Mark Karna:
+1. Checkbox pe click karo
+2. Todo faded aur strikethrough ho jayega
+3. "Done" count increase hoga
+
+✅ Todo Delete Karna:
+1. 🗑️ (delete) button click karo
+2. Confirmation dialog me "OK" click karo
+3. Todo remove ho jayega
+
+✅ Completed Todos Clear Karna:
+1. Header me "Clear Completed" button click karo
+2. Confirmation me "OK" karo
+3. Saare completed todos delete ho jayenge
+
+
+================================================================================
+                          TROUBLESHOOTING
+================================================================================
+
+❌ Server Start Nahi Ho Raha:
+- Check: Port 3000 already use me to nahi?
+- Solution: Dusre port use karo ya running process kill karo
+
+❌ Todos Load Nahi Ho Rahe:
+- Check: Server running hai?
+- Check: Browser console me errors?
+- Check: Network tab me API calls fail to nahi ho rahi?
+
+❌ Database Error:
+- Check: Kya MongoDB server chal raha hai? (localhost:27017 reachable?)
+- Check: .env me MONGODB_URI sahi hai?
+- Solution: MongoDB start karo; agar Docker use kar rahe ho to container up karo
+   (e.g., `docker run -p 27017:27017 mongo`), fir server restart karo
+
+❌ Styling Nahi Dikh Rahi:
+- Check: style.css file sahi path pe hai?
+- Check: Browser cache clear karo (Ctrl + Shift + R)
+
+❌ API Calls Fail Ho Rahi Hain:
+- Check: Server running hai?
+- Check: Console me network errors?
+- Check: Request body format sahi hai?
+ - Check: Tenant cookie (tid) block to nahi ho rahi? Cookie allow honi chahiye
+
+
+================================================================================
+                          PROJECT STRUCTURE SUMMARY
+================================================================================
+
+TODO-App/
+├── package.json          → Dependencies aur scripts (Express, MongoDB driver, dotenv, cookie-parser)
+├── server.js             → Main server file (tenant middleware + static serve)
+├── db.js                 → MongoDB connection + SQLite-like adapter + indexes
+├── routes/
+│   └── todos.js          → CRUD API endpoints (adapter use)
+├── public/
+│   ├── index.html        → HTML structure
+│   ├── style.css         → Styling aur animations
+│   └── script.js         → Frontend logic
+├── .env                  → Optional env vars (MONGODB_URI, MONGODB_DB)
+├── node_modules/         → Dependencies (auto-installed)
+└── README.md             → Basic instructions
+
+
+================================================================================
+                          FINAL NOTES
+================================================================================
+
+🎯 Is project me aapne seekha:
+- Node.js aur Express se backend server banana
+- MongoDB database use karna (collections, indexes, driver)
+- REST API design karna
+- Frontend se backend communicate karna
+- Dynamic UI updates karna
+- Modern CSS styling aur animations
+- Async JavaScript (fetch, promises, async/await)
+- DOM manipulation
+- Event handling
+ - Multi-tenant request scoping using cookies + AsyncLocalStorage
+
+🚀 Aage Improvements Kar Sakte Hain:
+- User authentication add karna
+- Todo categories/tags add karna
+- Due dates aur reminders
+- Search aur filter functionality
+- Drag-and-drop reordering
+- Dark/Light theme toggle
+- Export/Import todos
+ - Counters-based id allocation finalize karna (performance under high concurrency)
+ - Title search ke liye text index add karna
+
+💡 Ye ek complete, production-ready todo app hai jo real-world me use ho sakta hai!
+
+================================================================================
+                          END OF EXPLANATION
+================================================================================

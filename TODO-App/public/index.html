@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Todo App - CRUD with Node & MongoDB</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div class="app-wrapper">
+      <header class="app-header">
+        <div class="header-content">
+          <div class="logo">
+            <span class="logo-icon">✨</span>
+            <h1>My Todo List</h1>
+          </div>
+          <div class="stats">
+            <span id="total-count" class="stat-badge">0 Total</span>
+            <span id="completed-count" class="stat-badge success">0 Done</span>
+            <span id="pending-count" class="stat-badge warning">0 Pending</span>
+          </div>
+        </div>
+      </header>
+
+      <main class="container">
+        <section class="form-section">
+          <div class="form-card">
+            <form id="todo-form">
+              <div class="input-group">
+                <label for="title">What needs to be done?</label>
+                <input id="title" name="title" placeholder="e.g., Buy groceries, Study for exam..." autocomplete="off" />
+              </div>
+              <div class="input-group">
+                <label for="description">Add some details (optional)</label>
+                <textarea id="description" name="description" placeholder="Any additional notes..."></textarea>
+              </div>
+              <div class="form-actions">
+                <button type="submit" class="btn primary">
+                  <span class="btn-icon">➕</span>
+                  <span id="submit-text">Add Todo</span>
+                </button>
+                <button type="button" id="cancel-edit" class="btn secondary" style="display:none">
+                  <span class="btn-icon">✖️</span>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+          <div id="message" class="message" aria-live="polite"></div>
+        </section>
+
+        <section class="todos-section">
+          <div class="section-header">
+            <h2>Your Tasks</h2>
+            <button id="clear-completed" class="btn-link" style="display:none">Clear Completed</button>
+          </div>
+          <div id="todos" class="todos-grid"></div>
+        </section>
+      </main>
+    </div>
+
+    <script src="script.js" type="module"></script>
+  </body>
+</html>
