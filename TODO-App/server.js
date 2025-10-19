@@ -20,10 +20,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 // API routes
 app.use('/todos', todosRouter);
 
-// Catch-all for SPA (index.html)
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
+// Note: On Vercel, static files are served via vercel.json routing.
+// Keep Express focused on API only. Local dev still serves /public statically.
 
 
 // Export app for Vercel serverless (api/server.js)
