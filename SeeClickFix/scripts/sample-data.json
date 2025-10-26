@@ -1,0 +1,59 @@
+{
+  "users": [
+    {
+      "name": "Admin User",
+      "email": "admin@seeclickfix.com",
+      "username": "admin",
+      "password": "admin123",
+      "city": "Mumbai",
+      "address": "Admin Office, Mumbai, Maharashtra",
+      "role": "admin"
+    },
+    {
+      "name": "John Doe", 
+      "email": "john@example.com",
+      "username": "johndoe",
+      "password": "admin123",
+      "city": "Mumbai",
+      "address": "Bandra West, Mumbai, Maharashtra",
+      "role": "user"
+    }
+  ],
+  "reports": [
+    {
+      "problemType": "pothole",
+      "description": "Large pothole on the main road causing damage to vehicles. Needs immediate attention.",
+      "address": "Linking Road, Bandra West, Mumbai",
+      "coordinates": { "lat": 19.0596, "lng": 72.8295 },
+      "priority": "high"
+    },
+    {
+      "problemType": "street-light", 
+      "description": "Street light not working since last week. Area becomes very dark at night.",
+      "address": "SV Road, Bandra West, Mumbai", 
+      "coordinates": { "lat": 19.0606, "lng": 72.8306 },
+      "priority": "medium"
+    },
+    {
+      "problemType": "water-leak",
+      "description": "Water pipeline burst, causing water wastage and road flooding.",
+      "address": "Hill Road, Bandra West, Mumbai",
+      "coordinates": { "lat": 19.0567, "lng": 72.8280 },
+      "priority": "urgent"
+    },
+    {
+      "problemType": "garbage-collection",
+      "description": "Garbage not collected for 3 days. Bins overflowing and creating unhygienic conditions.", 
+      "address": "Turner Road, Bandra West, Mumbai",
+      "coordinates": { "lat": 19.0587, "lng": 72.8297 },
+      "priority": "medium"
+    },
+    {
+      "problemType": "traffic-signal",
+      "description": "Traffic signal malfunctioning, causing traffic jams during peak hours.",
+      "address": "Bandra-Worli Sea Link Junction, Mumbai",
+      "coordinates": { "lat": 19.0330, "lng": 72.8200 },
+      "priority": "high"
+    }
+  ]
+}
