@@ -11,15 +11,19 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   env: {
-    NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
-    NEXTAUTH_URL: process.env.NEXTAUTH_URL,
-    MONGODB_URI: process.env.MONGODB_URI,
-    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
-    GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
-    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
-    CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
-    CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
-    CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
+    // Only expose env vars to the client when they are non-empty strings.
+    // Empty-string values (from a mistaken env entry) can break URL parsing during
+    // prerender/build (NextAuth's parseUrl calls `new URL('')`). Coerce falsy
+    // values to undefined so the client-side code falls back to defaults.
+    NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET || undefined,
+    NEXTAUTH_URL: process.env.NEXTAUTH_URL || undefined,
+    MONGODB_URI: process.env.MONGODB_URI || undefined,
+    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || undefined,
+    GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET || undefined,
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY || undefined,
+    CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME || undefined,
+    CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY || undefined,
+    CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET || undefined,
   },
 }
 
